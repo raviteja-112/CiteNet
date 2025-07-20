@@ -20,6 +20,9 @@ class CustomPasswordResetView(PasswordResetView):
 
 
 def register(request):
+    if request.user.is_authenticated:
+        return redirect('search') # Redirect to home if already logged in
+
     if request.method == "POST":
         # Get form data from POST
         username = request.POST.get("username")
@@ -51,6 +54,9 @@ def register(request):
         return render(request, "accounts/register.html")
 
 def custom_login(request):
+    if request.user.is_authenticated:
+        return redirect('search') # Redirect to home if already logged in
+
     if request.method == "POST":
         username = request.POST.get("username")
         password = request.POST.get("password")
