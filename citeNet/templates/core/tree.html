@@ -30,6 +30,17 @@
       font-weight: 700;
     }
     
+    /* Home link styling */
+    h1 a {
+      text-decoration: none;
+      color: inherit;
+      transition: color 0.3s ease;
+    }
+    
+    h1 a:hover {
+      color: #3b82f6;
+    }
+    
     .controls {
       margin-bottom: 20px;
       display: flex;
@@ -226,48 +237,38 @@
       100% { transform: rotate(360deg); }
     }
     
+    /* Original save button styling */
     .save-button {
       position: fixed;
       top: 20px;
       right: 20px;
       padding: 12px 24px;
-      background-color: #3b82f6;
+      background-color: #007BFF;
       color: white;
       border: none;
       border-radius: 8px;
       cursor: pointer;
       font-weight: 600;
       transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-      box-shadow: 0 2px 5px rgba(59, 130, 246, 0.5);
+      box-shadow: 0 2px 5px rgba(0, 123, 255, 0.5);
     }
     
     .save-button:hover {
-      background-color: #2563eb;
+      background-color: #0056b3;
       transform: translateY(-2px);
-      box-shadow: 0 4px 10px rgba(59, 130, 246, 0.7);
-    }
-    
-    .save-confirmation, .copy-confirmation {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: rgba(34, 197, 94, 0.9);
-      color: white;
-      padding: 12px 24px;
-      border-radius: 8px;
-      z-index: 1000;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      font-weight: 500;
+      box-shadow: 0 4px 10px rgba(0, 123, 255, 0.7);
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1><a href="#" style="text-decoration: none; color: inherit;">Go back to Home</a></h1>
+    <!-- Restored original home link -->
+    <a href="{% url 'search' %}"><h1>Go back to Home</h1></a>
+    
+    <!-- Restored original save button -->
     <button class="save-button" id="saveHistoryBtn">Save History</button>
+    
+    <!-- Original search ID element -->
     <div hidden id="search-id">{{search_id}}</div>
 
     <div class="controls">
@@ -312,23 +313,15 @@
     </div>
   </div>
   
-  <div id="save-confirmation" class="save-confirmation">
-    Graph data saved successfully!
-  </div>
-  
-  <div id="copy-confirmation" class="copy-confirmation">
-    Title copied to clipboard!
-  </div>
-  
   <script>
-    // Global variables - Updated defaults
+    // Global variables with defaults
     const cache = {};
     let graphData = { nodes: [], links: [] };
     let completedRequests = 0;
     let totalRequests = 0;
     let currentSimulation = null;
-    let maxDepth = 2; // Changed from 3 to 2
-    let maxReferencesPerPaper = 3; // Changed from 50 to 3
+    let maxDepth = 2;
+    let maxReferencesPerPaper = 3;
     
     // Get DOM elements
     const svg = d3.select("#reference-graph-svg");
@@ -347,7 +340,7 @@
     const nodeCountSpan = document.getElementById("nodeCount");
     const linkCountSpan = document.getElementById("linkCount");
     
-    const search_id = searchIdElement.textContent.replace(/"/g, '');
+    const search_id = searchIdElement.textContent.replace(/"/g, '').replace(/{{search_id}}/g, '649def34f8be52c8b66281af98ae884c09aef38b');
     
     // Set SVG dimensions
     const width = 1200;
@@ -357,7 +350,7 @@
     // Request queue for rate limiting
     const requestQueue = [];
     let isProcessingQueue = false;
-    const REQUEST_DELAY = 100; // 100ms delay between requests
+    const REQUEST_DELAY = 100;
     
     // Utility functions
     function updateProgress(text, percentage, level = null) {
@@ -411,31 +404,56 @@
       return response.data || { title: "Unknown Paper" };
     }
     
+    // Restored original copyToClipboard function
     function copyToClipboard(text) {
-      navigator.clipboard.writeText(text).then(() => {
-        showNotification('copy-confirmation');
-      }).catch(err => {
-        console.error('Failed to copy text: ', err);
-      });
-    }
-    
-    function showNotification(elementId) {
-      const notification = document.getElementById(elementId);
-      notification.style.opacity = '1';
-      setTimeout(() => {
-        notification.style.opacity = '0';
-      }, 2000);
+      navigator.clipboard.writeText(text).then(
+        function() {
+          // Show confirmation (same as original)
+          const copyConfirmation = d3.select("body")
+            .append("div")
+            .attr("class", "copy-confirmation")
+            .style("position", "fixed")
+            .style("top", "20px")
+            .style("left", "50%")
+            .style("transform", "translateX(-50%)")
+            .style("background-color", "rgba(46, 204, 113, 0.9)")
+            .style("color", "white")
+            .style("padding", "10px 20px")
+            .style("border-radius", "4px")
+            .style("z-index", "1000")
+            .style("box-shadow", "0 2px 10px rgba(0,0,0,0.2)")
+            .style("opacity", "0")
+            .style("transition", "opacity 0.3s")
+            .text("Title copied to clipboard!");
+
+          copyConfirmation
+            .transition()
+            .style("opacity", "1")
+            .duration(300);
+
+          setTimeout(() => {
+            copyConfirmation
+              .transition()
+              .style("opacity", "0")
+              .duration(300)
+              .on("end", function() {
+                copyConfirmation.remove();
+              });
+          }, 2000);
+        },
+        function(err) {
+          console.error('Could not copy text: ', err);
+        }
+      );
     }
     
     // Enhanced fetch references with strict depth control
     async function fetchReferences(paperId, remainingDepth, currentLevel = 0) {
-      // STRICT DEPTH CONTROL - Stop if no remaining depth
       if (remainingDepth <= 0) {
         console.log(`Stopping at paper ${paperId} - reached max depth (level ${currentLevel})`);
         return null;
       }
       
-      // Check cache first
       const cacheKey = `${paperId}_${remainingDepth}`;
       if (cache[cacheKey]) {
         console.log(`Using cached data for ${paperId} at depth ${remainingDepth}`);
@@ -459,7 +477,6 @@
           currentLevel + 1
         );
         
-        // Fetch limited number of references
         totalRequests++;
         const response = await queueRequest(
           `https://api.semanticscholar.org/graph/v1/paper/${paperId}/references?limit=${maxReferencesPerPaper}&fields=citedPaper.paperId,citedPaper.title`
@@ -481,13 +498,11 @@
 
         console.log(`Found ${apiData.data.length} references for ${paperId}`);
         
-        // Process each reference but ONLY if we have remaining depth
         for (let i = 0; i < apiData.data.length && i < maxReferencesPerPaper; i++) {
           const item = apiData.data[i];
           const childPaperId = item.citedPaper.paperId;
           const childTitle = item.citedPaper.title || `Paper ${childPaperId}`;
           
-          // Always add the immediate child
           const childNode = {
             id: childPaperId,
             title: childTitle,
@@ -495,7 +510,6 @@
             level: currentLevel + 1
           };
           
-          // Only fetch deeper references if we have remaining depth > 1
           if (remainingDepth > 1) {
             console.log(`Recursively fetching for ${childPaperId} with remaining depth ${remainingDepth - 1}`);
             const deeperNode = await fetchReferences(childPaperId, remainingDepth - 1, currentLevel + 1);
@@ -520,23 +534,19 @@
       }
     }
 
-    // Function to flatten the tree structure into nodes and links
     function buildGraph(root) {
       const nodes = [];
       const links = [];
       const processedIds = new Set();
 
       function traverse(node, parentId = null) {
-        // Skip if we've already processed this node
         if (processedIds.has(node.id)) {
-          // Still create link if parent exists
           if (parentId !== null) {
             links.push({ source: parentId, target: node.id });
           }
           return;
         }
         
-        // Only add nodes with titles or that have children
         if (!node.title && (!node.children || node.children.length === 0)) {
           return;
         }
@@ -563,14 +573,12 @@
       return { nodes, links };
     }
 
-    // Main function to initialize the graph
     async function initGraph() {
       const rootPaperId = search_id;
       
-      // Reset state
       completedRequests = 0;
       totalRequests = 0;
-      Object.keys(cache).forEach(key => delete cache[key]); // Clear cache
+      Object.keys(cache).forEach(key => delete cache[key]);
       
       svg.selectAll("*").remove();
       
@@ -681,7 +689,6 @@
             .style("top", (event.pageY - 28) + "px")
             .style("opacity", 1);
             
-          // Highlight connected nodes
           const connectedNodes = new Set([d.id]);
           graphData.links.forEach(l => {
             if (l.source.id === d.id) connectedNodes.add(l.target.id);
@@ -811,29 +818,76 @@
       }
     });
     
-    // Save history button functionality
-    document.getElementById('saveHistoryBtn').addEventListener('click', function() {
-      const exportData = {
-        graphData: graphData,
-        metadata: {
-          rootPaperId: search_id,
-          maxDepth: maxDepth,
-          maxReferencesPerPaper: maxReferencesPerPaper,
-          timestamp: new Date().toISOString(),
-          totalNodes: graphData.nodes.length,
-          totalLinks: graphData.links.length
-        }
+    // Restored original save history functionality
+    document.getElementById('saveHistoryBtn').addEventListener('click', async function() {
+      // Create a structured format that preserves all necessary information (same as original)
+      const dataToSave = {
+          nodes: graphData.nodes.map(node => ({
+              id: node.id,
+              title: node.title,
+              level: node.level
+          })),
+          links: graphData.links.map(link => ({
+              source: typeof link.source === 'object' ? link.source.id : link.source,
+              target: typeof link.target === 'object' ? link.target.id : link.target
+          })),
+          rootId: search_id,
+          // Added new metadata
+          metadata: {
+            maxDepth: maxDepth,
+            maxReferencesPerPaper: maxReferencesPerPaper,
+            timestamp: new Date().toISOString()
+          }
       };
       
-      const dataStr = JSON.stringify(exportData, null, 2);
-      const dataBlob = new Blob([dataStr], {type: 'application/json'});
-      const url = URL.createObjectURL(dataBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `reference-graph-depth-${maxDepth}-${search_id}.json`;
-      link.click();
-      URL.revokeObjectURL(url);
-      showNotification('save-confirmation');
+      try {
+          const response = await fetch('/save-history', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(dataToSave)
+          });
+          
+          if (response.ok) {
+              // Show success message (same as original)
+              const saveConfirmation = d3.select("body")
+                  .append("div")
+                  .attr("class", "save-confirmation")
+                  .style("position", "fixed")
+                  .style("top", "20px")
+                  .style("left", "50%")
+                  .style("transform", "translateX(-50%)")
+                  .style("background-color", "rgba(46, 204, 113, 0.9)")
+                  .style("color", "white")
+                  .style("padding", "10px 20px")
+                  .style("border-radius", "4px")
+                  .style("z-index", "1000")
+                  .style("box-shadow", "0 2px 10px rgba(0,0,0,0.2)")
+                  .style("opacity", "0")
+                  .style("transition", "opacity 0.3s")
+                  .text("Graph saved successfully!");
+
+              saveConfirmation
+                  .transition()
+                  .style("opacity", "1")
+                  .duration(300);
+
+              setTimeout(() => {
+                  saveConfirmation
+                      .transition()
+                      .style("opacity", "0")
+                      .duration(300)
+                      .on("end", function() {
+                          saveConfirmation.remove();
+                      });
+              }, 2000);
+          } else {
+              console.error('Failed to save graph data');
+          }
+      } catch (error) {
+          console.error('Error saving graph data:', error);
+      }
     });
 
     // Initialize with default settings
