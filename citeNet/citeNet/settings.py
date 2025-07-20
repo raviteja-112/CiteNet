@@ -7,16 +7,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'your-secret-key')  # Use a real secret key in production
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-<<<<<<< HEAD
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'citenet-k8ne.onrender.com']
-=======
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     'citenet-k8ne.onrender.com',
 ]
 
->>>>>>> a1d68b48b1a0f0a229e6fb183fbbe85999f37225
 
 # Application definition
 INSTALLED_APPS = [
