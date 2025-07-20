@@ -8,25 +8,25 @@
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
     body {
-      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; /* Modern font stack */
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
       margin: 0;
       padding: 20px;
-      background-color: #f0f2f5; /* Softer background */
+      background-color: #f0f2f5;
     }
     
     .container {
-      max-width: 1400px; /* Slightly wider container */
+      max-width: 1400px;
       margin: 0 auto;
       background-color: white;
-      border-radius: 12px; /* More rounded corners */
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Softer, more pronounced shadow */
-      padding: 30px; /* Increased padding */
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      padding: 30px;
     }
     
     h1 {
-      color: #1f2937; /* Darker, modern heading color */
+      color: #1f2937;
       margin-top: 0;
-      font-size: 2.25rem; /* Larger heading */
+      font-size: 2.25rem;
       font-weight: 700;
     }
     
@@ -34,80 +34,98 @@
       margin-bottom: 20px;
       display: flex;
       align-items: center;
-      gap: 15px; /* Increased gap */
+      gap: 15px;
+      flex-wrap: wrap;
     }
     
-    input, button {
-      padding: 10px 15px; /* Larger input/button padding */
-      border-radius: 8px; /* More rounded */
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    input, button, select {
+      padding: 10px 15px;
+      border-radius: 8px;
       font-size: 0.95rem;
+      border: 1px solid #d1d5db;
     }
     
-    input {
-      border: 1px solid #d1d5db; /* Lighter border */
-      width: 70px;
+    input[type="number"], select {
+      width: 80px;
     }
     
     button {
-      background-color: #3b82f6; /* Tailwind's blue-500 */
+      background-color: #3b82f6;
       color: white;
       border: none;
       cursor: pointer;
-      transition: background-color 0.3s ease, transform 0.2s ease; /* Smoother transitions */
+      transition: background-color 0.3s ease, transform 0.2s ease;
     }
     
     button:hover {
-      background-color: #2563eb; /* Darker blue on hover */
-      transform: translateY(-1px); /* Slight lift on hover */
+      background-color: #2563eb;
+      transform: translateY(-1px);
+    }
+    
+    button:disabled {
+      background-color: #9ca3af;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    label {
+      font-weight: 500;
+      color: #374151;
     }
     
     svg {
-      background-color: #ffffff; /* White background for SVG */
-      border-radius: 12px; /* Rounded corners for SVG */
-      border: 1px solid #e5e7eb; /* Lighter border for SVG */
-      display: block; /* Ensure it behaves as a block element */
-      width: 100%; /* Make SVG responsive */
-      height: auto; /* Maintain aspect ratio */
-      min-height: 600px; /* Minimum height for visualization */
+      background-color: #ffffff;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 600px;
     }
 
     .node {
-      stroke: #ffffff; /* White stroke for nodes */
+      stroke: #ffffff;
       stroke-width: 2px;
-      transition: r 0.3s ease, fill 0.3s ease, stroke 0.3s ease; /* Smoother transitions */
+      transition: r 0.3s ease, fill 0.3s ease, stroke 0.3s ease;
     }
     
     .node:hover {
-      stroke: #111827; /* Darker stroke on hover */
+      stroke: #111827;
       cursor: pointer;
     }
     
     .root-node {
-      fill: #ef4444; /* Red-500 */
+      fill: #ef4444;
     }
     
     .node-level-1 {
-      fill: #3b82f6; /* Blue-500 */
+      fill: #3b82f6;
     }
     
     .node-level-2 {
-      fill: #10b981; /* Emerald-500 */
+      fill: #10b981;
     }
     
     .node-level-3 {
-      fill: #f59e0b; /* Amber-500 */
+      fill: #f59e0b;
     }
     
     .node-level-4 {
-      fill: #8b5cf6; /* Violet-500 */
+      fill: #8b5cf6;
     }
     
     .node-level-5 {
-      fill: #06b6d4; /* Cyan-500 */
+      fill: #06b6d4;
     }
     
     .link {
-      stroke: #9ca3af; /* Gray-400 */
+      stroke: #9ca3af;
       stroke-opacity: 0.7;
       stroke-width: 1.5px;
       transition: stroke-width 0.3s ease, stroke-opacity 0.3s ease;
@@ -119,8 +137,8 @@
     }
     
     .label {
-      font-size: 0.875rem; /* Tailwind's text-sm */
-      fill: #374151; /* Darker gray for labels */
+      font-size: 0.875rem;
+      fill: #374151;
       pointer-events: none;
       user-select: none;
       transition: opacity 0.3s ease;
@@ -128,115 +146,154 @@
     
     .tooltip {
       position: absolute;
-      padding: 12px 16px; /* Increased padding */
-      background-color: rgba(31, 41, 55, 0.9); /* Dark background */
+      padding: 12px 16px;
+      background-color: rgba(31, 41, 55, 0.9);
       color: white;
-      border-radius: 8px; /* More rounded */
-      font-size: 0.875rem; /* text-sm */
-      max-width: 350px; /* Wider tooltip */
+      border-radius: 8px;
+      font-size: 0.875rem;
+      max-width: 350px;
       z-index: 10;
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.3s ease;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2); /* Softer shadow */
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
+    
     .loading-container {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(240, 242, 245, 0.95); /* Slightly transparent background */
+      background-color: rgba(240, 242, 245, 0.95);
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       z-index: 1000;
-      backdrop-filter: blur(5px); /* Apply blur effect */
+      backdrop-filter: blur(5px);
     }
     
     .spinner {
-      width: 60px; /* Larger spinner */
+      width: 60px;
       height: 60px;
-      border: 6px solid #e5e7eb; /* Lighter border */
-      border-top: 6px solid #3b82f6; /* Blue spinner */
+      border: 6px solid #e5e7eb;
+      border-top: 6px solid #3b82f6;
       border-radius: 50%;
       animation: spin 1s linear infinite;
-      margin-bottom: 24px; /* Increased margin */
+      margin-bottom: 24px;
     }
     
     .progress-container {
-      width: 350px; /* Wider progress bar container */
+      width: 350px;
       margin-top: 24px;
     }
     
     .progress-bar {
       width: 100%;
-      background-color: #e5e7eb; /* Lighter background */
+      background-color: #e5e7eb;
       border-radius: 4px;
       overflow: hidden;
-      height: 12px; /* Thicker progress bar */
+      height: 12px;
     }
     
     .progress {
       height: 100%;
-      background-color: #3b82f6; /* Blue progress */
+      background-color: #3b82f6;
       width: 0%;
-      transition: width 0.4s ease; /* Smoother progress transition */
+      transition: width 0.4s ease;
     }
     
     .progress-text {
       text-align: center;
-      margin-top: 8px; /* More space */
-      font-size: 0.95rem; /* text-sm */
-      color: #4b5563; /* Slightly darker text */
+      margin-top: 8px;
+      font-size: 0.95rem;
+      color: #4b5563;
+    }
+    
+    .stats {
+      margin-top: 16px;
+      padding: 12px;
+      background-color: #f9fafb;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      font-size: 0.875rem;
+      color: #6b7280;
     }
     
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+    
     .save-button {
-            position: fixed;
-            top: 20px; /* Adjusted position */
-            right: 20px; /* Adjusted position */
-            padding: 12px 24px; /* Larger padding */
-            background-color: #3b82f6; /* Tailwind blue */
-            color: white;
-            border: none;
-            border-radius: 8px; /* More rounded */
-            cursor: pointer;
-            font-weight: 600; /* Semibold */
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-            box-shadow: 0 2px 5px rgba(59, 130, 246, 0.5); /* Subtle shadow */
-        }
-        .save-button:hover {
-            background-color: #2563eb; /* Darker blue */
-            transform: translateY(-2px); /* Slight lift */
-            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.7); /* More pronounced shadow */
-        }
-        .save-confirmation, .copy-confirmation {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(34, 197, 94, 0.9); /* Green for success */
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            z-index: 1000;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            font-weight: 500;
-        }
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 24px;
+      background-color: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+      box-shadow: 0 2px 5px rgba(59, 130, 246, 0.5);
+    }
+    
+    .save-button:hover {
+      background-color: #2563eb;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(59, 130, 246, 0.7);
+    }
+    
+    .save-confirmation, .copy-confirmation {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(34, 197, 94, 0.9);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      z-index: 1000;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      font-weight: 500;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <a href="{% url 'search' %}"><h1>Go back to Home</h1></a>
+    <h1><a href="#" style="text-decoration: none; color: inherit;">Go back to Home</a></h1>
     <button class="save-button" id="saveHistoryBtn">Save History</button>
     <div hidden id="search-id">{{search_id}}</div>
+
+    <div class="controls">
+      <div class="control-group">
+        <label for="depthInput">Max Depth:</label>
+        <select id="depthInput">
+          <option value="1">1 Level</option>
+          <option value="2" selected>2 Levels</option>
+          <option value="3">3 Levels</option>
+          <option value="4">4 Levels</option>
+          <option value="5">5 Levels</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="maxRefsInput">Max Refs per Paper:</label>
+        <input type="number" id="maxRefsInput" value="3" min="2" max="15" step="1">
+      </div>
+      <button id="regenerateBtn">Regenerate Graph</button>
+      <button id="resetBtn">Reset View</button>
+    </div>
+
+    <div class="stats" id="statsContainer">
+      <div>Graph will be generated up to <span id="currentDepth">2</span> levels deep</div>
+      <div>Current stats: <span id="nodeCount">0</span> nodes, <span id="linkCount">0</span> links</div>
+    </div>
+
     <div id="tooltip" class="tooltip"></div>
     <svg id="reference-graph-svg">
       <!-- Graph will be rendered here by D3 -->
@@ -246,7 +303,7 @@
   <div id="loading-screen" class="loading-container">
     <div class="spinner"></div>
     <h2>Building Reference Graph</h2>
-    <p>Please wait while we fetch and process the references...</p>
+    <p>Processing depth level: <span id="currentLevelSpan">1</span></p>
     <div class="progress-container">
       <div class="progress-bar">
         <div id="progress" class="progress"></div>
@@ -255,399 +312,533 @@
     </div>
   </div>
   
+  <div id="save-confirmation" class="save-confirmation">
+    Graph data saved successfully!
+  </div>
+  
+  <div id="copy-confirmation" class="copy-confirmation">
+    Title copied to clipboard!
+  </div>
+  
   <script>
-document.addEventListener("DOMContentLoaded", function() {
-    const svg = d3.select("#reference-graph-svg"); // Use ID for clarity
-  const width = +svg.attr("width"); // These are set in HTML, but good to have if dynamic
-  const height = +svg.attr("height");
-  const tooltip = d3.select("#tooltip");
-  const search_id = document.getElementById("search-id").textContent;
-  const loadingScreen = document.getElementById("loading-screen");
-  const progressBar = document.getElementById("progress");
-  const progressText = document.getElementById("progress-text");
-  var graphData;
-
-  // Cache to store fetched paper details and references
-  const cache = {};
-  document.getElementById('saveHistoryBtn').addEventListener('click', async function() {
-    // Create a structured format that preserves all necessary information
-    const dataToSave = {
-        nodes: graphData.nodes.map(node => ({
-            id: node.id,
-            title: node.title,
-            level: node.level
-        })),
-        links: graphData.links.map(link => ({
-            source: typeof link.source === 'object' ? link.source.id : link.source,
-            target: typeof link.target === 'object' ? link.target.id : link.target
-        })),
-        rootId: search_id
-    };
+    // Global variables - Updated defaults
+    const cache = {};
+    let graphData = { nodes: [], links: [] };
+    let completedRequests = 0;
+    let totalRequests = 0;
+    let currentSimulation = null;
+    let maxDepth = 2; // Changed from 3 to 2
+    let maxReferencesPerPaper = 3; // Changed from 50 to 3
     
-    try {
-        const response = await fetch('/save-history', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(dataToSave)
+    // Get DOM elements
+    const svg = d3.select("#reference-graph-svg");
+    const tooltip = d3.select("#tooltip");
+    const loadingScreen = document.getElementById("loading-screen");
+    const progressBar = document.getElementById("progress");
+    const progressText = document.getElementById("progress-text");
+    const currentLevelSpan = document.getElementById("currentLevelSpan");
+    const searchIdElement = document.getElementById("search-id");
+    const depthInput = document.getElementById("depthInput");
+    const maxRefsInput = document.getElementById("maxRefsInput");
+    const regenerateBtn = document.getElementById("regenerateBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const statsContainer = document.getElementById("statsContainer");
+    const currentDepthSpan = document.getElementById("currentDepth");
+    const nodeCountSpan = document.getElementById("nodeCount");
+    const linkCountSpan = document.getElementById("linkCount");
+    
+    const search_id = searchIdElement.textContent.replace(/"/g, '');
+    
+    // Set SVG dimensions
+    const width = 1200;
+    const height = 800;
+    svg.attr("width", width).attr("height", height);
+    
+    // Request queue for rate limiting
+    const requestQueue = [];
+    let isProcessingQueue = false;
+    const REQUEST_DELAY = 100; // 100ms delay between requests
+    
+    // Utility functions
+    function updateProgress(text, percentage, level = null) {
+      progressText.textContent = text;
+      progressBar.style.width = `${Math.min(100, Math.max(0, percentage))}%`;
+      if (level !== null) {
+        currentLevelSpan.textContent = level;
+      }
+    }
+    
+    function updateStats() {
+      currentDepthSpan.textContent = maxDepth;
+      nodeCountSpan.textContent = graphData.nodes.length;
+      linkCountSpan.textContent = graphData.links.length;
+    }
+    
+    async function queueRequest(url) {
+      return new Promise((resolve) => {
+        requestQueue.push({ url, resolve });
+        processQueue();
+      });
+    }
+    
+    async function processQueue() {
+      if (isProcessingQueue || requestQueue.length === 0) return;
+      isProcessingQueue = true;
+      
+      while (requestQueue.length > 0) {
+        const { url, resolve } = requestQueue.shift();
+        try {
+          const response = await axios.get(url);
+          completedRequests++;
+          resolve({ data: response.data, error: null });
+        } catch (error) {
+          console.error('Request failed:', error);
+          completedRequests++;
+          resolve({ data: null, error: error.message });
+        }
+        
+        if (requestQueue.length > 0) {
+          await new Promise(r => setTimeout(r, REQUEST_DELAY));
+        }
+      }
+      
+      isProcessingQueue = false;
+    }
+    
+    async function fetchPaperDetails(paperId) {
+      totalRequests++;
+      const response = await queueRequest(`https://api.semanticscholar.org/graph/v1/paper/${paperId}?fields=title`);
+      return response.data || { title: "Unknown Paper" };
+    }
+    
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showNotification('copy-confirmation');
+      }).catch(err => {
+        console.error('Failed to copy text: ', err);
+      });
+    }
+    
+    function showNotification(elementId) {
+      const notification = document.getElementById(elementId);
+      notification.style.opacity = '1';
+      setTimeout(() => {
+        notification.style.opacity = '0';
+      }, 2000);
+    }
+    
+    // Enhanced fetch references with strict depth control
+    async function fetchReferences(paperId, remainingDepth, currentLevel = 0) {
+      // STRICT DEPTH CONTROL - Stop if no remaining depth
+      if (remainingDepth <= 0) {
+        console.log(`Stopping at paper ${paperId} - reached max depth (level ${currentLevel})`);
+        return null;
+      }
+      
+      // Check cache first
+      const cacheKey = `${paperId}_${remainingDepth}`;
+      if (cache[cacheKey]) {
+        console.log(`Using cached data for ${paperId} at depth ${remainingDepth}`);
+        return cache[cacheKey];
+      }
+      
+      console.log(`Fetching references for ${paperId} at level ${currentLevel}, remaining depth: ${remainingDepth}`);
+      
+      const node = { 
+        id: paperId, 
+        title: "", 
+        children: [], 
+        level: currentLevel,
+        remainingDepth: remainingDepth
+      };
+      
+      try {
+        updateProgress(
+          `Processing level ${currentLevel + 1} of ${maxDepth} (${remainingDepth - 1} levels remaining)...`, 
+          (currentLevel / maxDepth) * 90, 
+          currentLevel + 1
+        );
+        
+        // Fetch limited number of references
+        totalRequests++;
+        const response = await queueRequest(
+          `https://api.semanticscholar.org/graph/v1/paper/${paperId}/references?limit=${maxReferencesPerPaper}&fields=citedPaper.paperId,citedPaper.title`
+        );
+        
+        if (response.error) {
+          console.warn(`Error fetching references for ${paperId}:`, response.error);
+          cache[cacheKey] = node;
+          return node;
+        }
+
+        const apiData = response.data;
+        
+        if (!apiData || !apiData.data || apiData.data.length === 0) {
+          console.log(`No references found for ${paperId}`);
+          cache[cacheKey] = node;
+          return node;
+        }
+
+        console.log(`Found ${apiData.data.length} references for ${paperId}`);
+        
+        // Process each reference but ONLY if we have remaining depth
+        for (let i = 0; i < apiData.data.length && i < maxReferencesPerPaper; i++) {
+          const item = apiData.data[i];
+          const childPaperId = item.citedPaper.paperId;
+          const childTitle = item.citedPaper.title || `Paper ${childPaperId}`;
+          
+          // Always add the immediate child
+          const childNode = {
+            id: childPaperId,
+            title: childTitle,
+            children: [],
+            level: currentLevel + 1
+          };
+          
+          // Only fetch deeper references if we have remaining depth > 1
+          if (remainingDepth > 1) {
+            console.log(`Recursively fetching for ${childPaperId} with remaining depth ${remainingDepth - 1}`);
+            const deeperNode = await fetchReferences(childPaperId, remainingDepth - 1, currentLevel + 1);
+            if (deeperNode && deeperNode.children) {
+              childNode.children = deeperNode.children;
+            }
+          } else {
+            console.log(`Not going deeper for ${childPaperId} - depth limit reached`);
+          }
+          
+          node.children.push(childNode);
+        }
+        
+        console.log(`Added ${node.children.length} children to ${paperId}`);
+        cache[cacheKey] = node;
+        return node;
+        
+      } catch (error) {
+        console.error(`Error processing ${paperId}:`, error);
+        cache[cacheKey] = node;
+        return node;
+      }
+    }
+
+    // Function to flatten the tree structure into nodes and links
+    function buildGraph(root) {
+      const nodes = [];
+      const links = [];
+      const processedIds = new Set();
+
+      function traverse(node, parentId = null) {
+        // Skip if we've already processed this node
+        if (processedIds.has(node.id)) {
+          // Still create link if parent exists
+          if (parentId !== null) {
+            links.push({ source: parentId, target: node.id });
+          }
+          return;
+        }
+        
+        // Only add nodes with titles or that have children
+        if (!node.title && (!node.children || node.children.length === 0)) {
+          return;
+        }
+        
+        nodes.push({ 
+          id: node.id, 
+          title: node.title || `Paper ${node.id}`, 
+          level: node.level || 0 
         });
         
-        if (response.ok) {
-            // Show success message
-            const saveConfirmation = d3.select("body")
-                .append("div")
-                .attr("class", "save-confirmation")
-                .text("Graph saved successfully!");
-
-            setTimeout(() => {
-                saveConfirmation
-                    .transition()
-                    .style("opacity", "0")
-                    .duration(300)
-                    .on("end", function() {
-                        saveConfirmation.remove();
-                    });
-            }, 2000);
-        } else {
-            console.error('Failed to save graph data');
-        }
-    } catch (error) {
-        console.error('Error saving graph data:', error);
-    }
-});
-  const requestQueue = [];
-  let isProcessingQueue = false;
-  const requestDelay = 800; // 800 milli second between requests
-  let totalRequests = 0;
-  let completedRequests = 0;
-
-  function updateProgress(message, percent) {
-    progressBar.style.width = `${percent}%`;
-    progressText.textContent = message;
-  }
-  
-  // Function to process the request queue with rate limiting
-  async function processQueue() {
-    if (isProcessingQueue || requestQueue.length === 0) return;
-    
-    isProcessingQueue = true;
-    const { url, callback } = requestQueue.shift();
-    
-    try {
-      completedRequests++; 
-      updateProgress(`Processing request ${completedRequests} of ${totalRequests}...`, (completedRequests / totalRequests) * 100);
-      const response = await axios.get(url);
-      callback(response);
-    } catch (error) {
-      callback({ error });
-    }
-    
-    setTimeout(() => {
-      isProcessingQueue = false;
-      processQueue();
-    }, requestDelay);
-  }
-  
-  // Function to add request to queue
-  function queueRequest(url) {
-    return new Promise((resolve) => {
-      totalRequests++; 
-      requestQueue.push({
-        url,
-        callback: (response) => resolve(response)
-      });
-      
-      if (!isProcessingQueue) {
-        processQueue();
-      }
-    });
-  }
-
-  // Function to copy text to clipboard
-  function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(
-      function() {
-        const copyConfirmation = d3.select("body")
-          .append("div")
-          .attr("class", "copy-confirmation")
-          .text("Title copied to clipboard!");
-
-        setTimeout(() => {
-          copyConfirmation
-            .transition()
-            .style("opacity", "0")
-            .duration(300)
-            .on("end", function() {
-              copyConfirmation.remove();
-            });
-        }, 2000);
-      },
-      function(err) {
-        console.error('Could not copy text: ', err);
-      }
-    );
-  }
-
-  // Fetch paper details by paperId with caching
-   async function fetchPaperDetails(paperId) {
-    if (cache[paperId]) return cache[paperId];
-    try {
-      const response = await queueRequest(`https://api.semanticscholar.org/graph/v1/paper/${paperId}`);
-      if (response.error) throw response.error;
-      const data = response.data;
-      if (!data.title) data.title = "";
-      cache[paperId] = data;
-      return data;
-    } catch (error) {
-      console.warn(`No data available for paper ID: ${paperId}`);
-      cache[paperId] = { paperId, title: "" };
-      return cache[paperId];
-    }
-  }
-
-  // Recursive function to fetch reference data up to a given depth with caching
-  async function fetchReferences(paperId, depth = 3, currentLevel = 0) {
-    if (depth === 0) return null;
-    if (cache[paperId]?.children) return cache[paperId];
-    try {
-      updateProgress(`Fetching references for level ${currentLevel + 1}...`, Math.min(90, (completedRequests / totalRequests) * 100));
-      const response = await queueRequest(`https://api.semanticscholar.org/graph/v1/paper/${paperId}/references?limit=2`);
-      if (response.error) throw response.error;
-      
-      const apiData = response.data;
-      const node = { id: paperId, title: "", children: [], level: currentLevel };
-      
-      for (let i = 0; i < apiData.data.length; i++) {
-        const item = apiData.data[i];
-        const childPaperId = item.citedPaper.paperId;
-        const childDetails = await fetchPaperDetails(childPaperId);
-        const childNode = await fetchReferences(childPaperId, depth - 1, currentLevel + 1);
+        processedIds.add(node.id);
         
-        if (childDetails.title || (childNode && childNode.children.length > 0)) {
-          node.children.push({
-            id: childPaperId,
-            title: childDetails.title || "",
-            children: childNode ? childNode.children : [],
-            level: currentLevel + 1
-          });
+        if (parentId !== null) {
+          links.push({ source: parentId, target: node.id });
+        }
+        
+        if (node.children && node.children.length > 0) {
+          node.children.forEach(child => traverse(child, node.id));
         }
       }
       
-      cache[paperId] = node;
-      return node;
-    } catch (error) {
-      console.warn(`No references available for paper ID: ${paperId}`);
-      cache[paperId] = { id: paperId, title: "", children: [], level: currentLevel };
-      return cache[paperId];
+      traverse(root);
+      console.log(`Built graph with ${nodes.length} nodes and ${links.length} links`);
+      return { nodes, links };
     }
-  }
 
-  // Function to flatten the tree structure into nodes and links
-  function buildGraph(root) {
-    const nodes = [];
-    const links = [];
-
-    function traverse(node, parentId = null) {
-      if (!node.title && node.children.length === 0) return;
-      nodes.push({ 
-        id: node.id, 
-        title: node.title, 
-        level: node.level || 0 
-      });
-      if (parentId !== null) {
-        links.push({ source: parentId, target: node.id });
+    // Main function to initialize the graph
+    async function initGraph() {
+      const rootPaperId = search_id;
+      
+      // Reset state
+      completedRequests = 0;
+      totalRequests = 0;
+      Object.keys(cache).forEach(key => delete cache[key]); // Clear cache
+      
+      svg.selectAll("*").remove();
+      
+      if (currentSimulation) {
+        currentSimulation.stop();
       }
-      node.children.forEach(child => traverse(child, node.id));
-    }
-    traverse(root);
-    return { nodes, links };
-  }
+      
+      loadingScreen.style.display = "flex";
+      updateProgress("Fetching root paper details...", 5, 1);
 
-  // Main function to initialize the graph and output JSON data
-  async function initGraph() {
-    const rootPaperId = search_id;
-    const depth = 5;
-    svg.selectAll("*").remove();
-    
-    loadingScreen.style.display = "flex";
-    updateProgress("Fetching root paper details...", 5);
+      const rootPaperDetails = await fetchPaperDetails(rootPaperId);
+      const root = {
+        id: rootPaperId,
+        title: rootPaperDetails.title || "Root Paper",
+        children: [],
+        level: 0
+      };
 
-    const rootPaperDetails = await fetchPaperDetails(rootPaperId);
-    const root = {
-      id: rootPaperId,
-      title: rootPaperDetails.title || "Untitled Paper",
-      children: [],
-      level: 0
-    };
+      updateProgress("Building reference tree...", 15, 1);
+      console.log(`Starting reference tree build with max depth: ${maxDepth}`);
+      
+      const referenceTree = await fetchReferences(rootPaperId, maxDepth, 0);
+      if (referenceTree && referenceTree.children) {
+        root.children = referenceTree.children;
+      }
 
-    updateProgress("Building reference tree...", 15);
-    const referenceTree = await fetchReferences(rootPaperId, depth);
-    if (referenceTree) root.children = referenceTree.children;
-
-    updateProgress("Constructing graph data...", 95);
-    graphData = buildGraph(root);
-    console.log(JSON.stringify(graphData, null, 2));
-
-    updateProgress("Rendering graph...", 98);
-    const simulation = d3.forceSimulation(graphData.nodes)
-      .force("link", d3.forceLink(graphData.links).id(d => d.id).distance(150))
-      .force("charge", d3.forceManyBody().strength(-300))
-      .force("center", d3.forceCenter(width / 2, height / 2));
-
-    const zoom = d3.zoom()
-      .scaleExtent([0.1, 4])
-      .on("zoom", (event) => {
-        svg.selectAll("g").attr("transform", event.transform);
+      updateProgress("Constructing graph data...", 95);
+      graphData = buildGraph(root);
+      
+      console.log(`Final graph:`, {
+        nodes: graphData.nodes.length,
+        links: graphData.links.length,
+        maxDepth: maxDepth,
+        levels: [...new Set(graphData.nodes.map(n => n.level))].sort()
       });
 
-    svg.call(zoom);
+      updateStats();
+      updateProgress("Rendering graph...", 98);
+      renderGraph(rootPaperId);
+      
+      updateProgress("Complete!", 100);
+      setTimeout(() => {
+        loadingScreen.style.display = "none";
+      }, 500);
+    }
     
-    const container = svg.append("g");
+    function renderGraph(rootPaperId) {
+      if (graphData.nodes.length === 0) {
+        console.warn("No nodes to render");
+        return;
+      }
+      
+      const simulation = d3.forceSimulation(graphData.nodes)
+        .force("link", d3.forceLink(graphData.links).id(d => d.id).distance(100))
+        .force("charge", d3.forceManyBody().strength(-200))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("collision", d3.forceCollide().radius(20));
 
-    const link = container.append("g")
-      .attr("class", "links")
-      .selectAll("line")
-      .data(graphData.links)
-      .enter().append("line")
-      .attr("class", "link");
+      currentSimulation = simulation;
 
-    const node = container.append("g")
-      .attr("class", "nodes")
-      .selectAll("circle")
-      .data(graphData.nodes)
-      .enter().append("circle")
-      .attr("class", d => {
-        let classes = "node";
-        if (d.id === rootPaperId) {
-          classes += " root-node";
-        } else {
-          classes += ` node-level-${d.level}`;
-        }
-        return classes;
-      })
-      .attr("r", d => d.id === rootPaperId ? 12 : 8)
-      .style("cursor", "pointer")
-      .on("mouseover", function(event, d) {
-        d3.select(this)
-          .transition()
-          .duration(200)
-          .attr("r", d.id === rootPaperId ? 16 : 12);
-          
-        tooltip.html(`<strong>${d.title}</strong><br><span style="font-size: 12px; opacity: 0.8;">(Click to copy title)</span>`)
-          .style("left", (event.pageX + 10) + "px")
-          .style("top", (event.pageY - 28) + "px")
-          .style("opacity", 1);
-          
-        link.style("stroke-opacity", l => 
-          (l.source.id === d.id || l.target.id === d.id) ? 1 : 0.2
-        );
-        link.style("stroke-width", l => 
-          (l.source.id === d.id || l.target.id === d.id) ? 3 : 1
-        );
-        node.style("opacity", n => 
-          (n.id === d.id || graphData.links.some(l => 
-            (l.source.id === d.id && l.target.id === n.id) || 
-            (l.target.id === d.id && l.source.id === n.id)
-          )) ? 1 : 0.5
-        );
-        
-        text.style("opacity", t => 
-          (t.id === d.id || graphData.links.some(l => 
-            (l.source.id === d.id && l.target.id === t.id) || 
-            (l.target.id === d.id && l.source.id === t.id)
-          )) ? 1 : 0.2
-        );
-      })
-      .on("mouseout", function() {
-        d3.select(this)
-          .transition()
-          .duration(200)
-          .attr("r", d => d.id === rootPaperId ? 12 : 8);
-          
-        tooltip.style("opacity", 0);
-        
-        link.style("stroke-opacity", 0.6);
-        link.style("stroke-width", 1.5);
-        node.style("opacity", 1);
-        text.style("opacity", 1);
-      })
-      .on("click", function(event, d) {
-        if (d.title && d.title.trim() !== "") {
-          copyToClipboard(d.title);
-          
+      const zoom = d3.zoom()
+        .scaleExtent([0.1, 4])
+        .on("zoom", (event) => {
+          container.attr("transform", event.transform);
+        });
+
+      svg.call(zoom);
+      
+      const container = svg.append("g");
+
+      const link = container.append("g")
+        .attr("class", "links")
+        .selectAll("line")
+        .data(graphData.links)
+        .enter().append("line")
+        .attr("class", "link");
+
+      const node = container.append("g")
+        .attr("class", "nodes")
+        .selectAll("circle")
+        .data(graphData.nodes)
+        .enter().append("circle")
+        .attr("class", d => {
+          let classes = "node";
+          if (d.id === rootPaperId) {
+            classes += " root-node";
+          } else {
+            classes += ` node-level-${Math.min(d.level, 5)}`;
+          }
+          return classes;
+        })
+        .attr("r", d => {
+          if (d.id === rootPaperId) return 15;
+          return Math.max(6, 12 - d.level * 1.5);
+        })
+        .style("cursor", "pointer")
+        .on("mouseover", function(event, d) {
+          const newRadius = d.id === rootPaperId ? 18 : Math.max(8, 15 - d.level * 1.5);
           d3.select(this)
-            .transition()
-            .duration(100)
-            .attr("r", d.id === rootPaperId ? 18 : 14)
             .transition()
             .duration(200)
-            .attr("r", d.id === rootPaperId ? 12 : 8);
-        }
-      })
-      .call(drag(simulation));
-
-    const text = container.append("g")
-      .attr("class", "labels")
-      .selectAll("text")
-      .data(graphData.nodes)
-      .enter().append("text")
-      .attr("class", "label")
-      .attr("dx", 12)
-      .attr("dy", ".35em")
-      .style("cursor", "pointer")
-      .text(d => d.title.length > 25 ? d.title.substring(0, 25) + "..." : d.title)
-      .on("click", function(event, d) {
-        if (d.title && d.title.trim() !== "") {
-          copyToClipboard(d.title);
+            .attr("r", newRadius);
+            
+          tooltip.html(`<strong>${d.title}</strong><br>
+                       <span style="font-size: 12px; opacity: 0.8;">Level: ${d.level}</span><br>
+                       <span style="font-size: 12px; opacity: 0.8;">(Click to copy title)</span>`)
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 28) + "px")
+            .style("opacity", 1);
+            
+          // Highlight connected nodes
+          const connectedNodes = new Set([d.id]);
+          graphData.links.forEach(l => {
+            if (l.source.id === d.id) connectedNodes.add(l.target.id);
+            if (l.target.id === d.id) connectedNodes.add(l.source.id);
+          });
           
+          link.style("stroke-opacity", l => 
+            (l.source.id === d.id || l.target.id === d.id) ? 1 : 0.2
+          );
+          link.style("stroke-width", l => 
+            (l.source.id === d.id || l.target.id === d.id) ? 3 : 1
+          );
+          node.style("opacity", n => connectedNodes.has(n.id) ? 1 : 0.3);
+          text.style("opacity", t => connectedNodes.has(t.id) ? 1 : 0.2);
+        })
+        .on("mouseout", function(event, d) {
+          const originalRadius = d.id === rootPaperId ? 15 : Math.max(6, 12 - d.level * 1.5);
           d3.select(this)
-            .style("font-weight", "bold")
             .transition()
-            .duration(500)
-            .style("font-weight", "normal");
-        }
+            .duration(200)
+            .attr("r", originalRadius);
+            
+          tooltip.style("opacity", 0);
+          
+          link.style("stroke-opacity", 0.6);
+          link.style("stroke-width", 1.5);
+          node.style("opacity", 1);
+          text.style("opacity", 1);
+        })
+        .on("click", function(event, d) {
+          if (d.title && d.title.trim() !== "") {
+            copyToClipboard(d.title);
+            
+            d3.select(this)
+              .transition()
+              .duration(100)
+              .attr("r", (d.id === rootPaperId ? 20 : Math.max(10, 16 - d.level * 1.5)))
+              .transition()
+              .duration(200)
+              .attr("r", (d.id === rootPaperId ? 15 : Math.max(6, 12 - d.level * 1.5)));
+          }
+        })
+        .call(drag(simulation));
+
+      const text = container.append("g")
+        .attr("class", "labels")
+        .selectAll("text")
+        .data(graphData.nodes)
+        .enter().append("text")
+        .attr("class", "label")
+        .attr("dx", 12)
+        .attr("dy", ".35em")
+        .style("cursor", "pointer")
+        .style("font-size", d => `${Math.max(10, 14 - d.level)}px`)
+        .text(d => {
+          const maxLength = Math.max(15, 35 - d.level * 5);
+          return d.title.length > maxLength ? d.title.substring(0, maxLength) + "..." : d.title;
+        })
+        .on("click", function(event, d) {
+          if (d.title && d.title.trim() !== "") {
+            copyToClipboard(d.title);
+            
+            d3.select(this)
+              .style("font-weight", "bold")
+              .transition()
+              .duration(500)
+              .style("font-weight", "normal");
+          }
+        });
+
+      simulation.on("tick", () => {
+        link.attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
+        node.attr("cx", d => d.x)
+            .attr("cy", d => d.y);
+        text.attr("x", d => d.x)
+            .attr("y", d => d.y);
       });
+    }
 
-    simulation.on("tick", () => {
-      link.attr("x1", d => d.source.x)
-          .attr("y1", d => d.source.y)
-          .attr("x2", d => d.target.x)
-          .attr("y2", d => d.target.y);
-      node.attr("cx", d => d.x)
-          .attr("cy", d => d.y);
-      text.attr("x", d => d.x)
-          .attr("y", d => d.y);
+    function drag(simulation) {
+      function dragstarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+      }
+      function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+      }
+      function dragended(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+      }
+      return d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended);
+    }
+    
+    // Event listeners
+    depthInput.addEventListener('change', function() {
+      maxDepth = parseInt(this.value);
+      updateStats();
     });
-    updateProgress("Complete!", 100);
-    setTimeout(() => {
-      loadingScreen.style.display = "none";
-    }, 500);
-  }
+    
+    maxRefsInput.addEventListener('change', function() {
+      maxReferencesPerPaper = parseInt(this.value);
+    });
+    
+    regenerateBtn.addEventListener('click', function() {
+      maxDepth = parseInt(depthInput.value);
+      maxReferencesPerPaper = parseInt(maxRefsInput.value);
+      initGraph();
+    });
+    
+    resetBtn.addEventListener('click', function() {
+      if (currentSimulation) {
+        svg.transition().duration(750).call(
+          d3.zoom().transform,
+          d3.zoomIdentity
+        );
+        currentSimulation.alpha(1).restart();
+      }
+    });
+    
+    // Save history button functionality
+    document.getElementById('saveHistoryBtn').addEventListener('click', function() {
+      const exportData = {
+        graphData: graphData,
+        metadata: {
+          rootPaperId: search_id,
+          maxDepth: maxDepth,
+          maxReferencesPerPaper: maxReferencesPerPaper,
+          timestamp: new Date().toISOString(),
+          totalNodes: graphData.nodes.length,
+          totalLinks: graphData.links.length
+        }
+      };
+      
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], {type: 'application/json'});
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `reference-graph-depth-${maxDepth}-${search_id}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      showNotification('save-confirmation');
+    });
 
-  function drag(simulation) {
-    function dragstarted(event, d) {
-      if (!event.active) simulation.alphaTarget(0.3).restart();
-      d.fx = d.x;
-      d.fy = d.y;
-    }
-    function dragged(event, d) {
-      d.fx = event.x;
-      d.fy = event.y;
-    }
-    function dragended(event, d) {
-      if (!event.active) simulation.alphaTarget(0);
-      d.fx = null;
-      d.fy = null;
-    }
-    return d3.drag()
-      .on("start", dragstarted)
-      .on("drag", dragged)
-      .on("end", dragended);
-  }
-
-  initGraph();
-});
+    // Initialize with default settings
+    updateStats();
+    initGraph();
   </script>
 </body>
 </html>
