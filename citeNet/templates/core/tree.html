@@ -66,8 +66,8 @@
     <div id="progress-text" class="mt-2 text-sm text-white">Initializing...</div>
   </div>
   
-  <script>
-    // The rest of your script remains the same
+   <script>
+    // Global variables with defaults
     const cache = {};
     let graphData = { nodes: [], links: [] };
     let completedRequests = 0;
@@ -98,10 +98,554 @@
     // Set SVG dimensions
     const width = 1200;
     const height = 800;
-    svg.attr("viewBox", `0 0 ${width} ${height}`);
+    svg.attr("width", width).attr("height", height);
     
-    // The rest of your script remains the same
-    // ...
+    // Request queue for rate limiting
+    const requestQueue = [];
+    let isProcessingQueue = false;
+    const REQUEST_DELAY = 100;
+    
+    // Utility functions
+    function updateProgress(text, percentage, level = null) {
+      progressText.textContent = text;
+      progressBar.style.width = `${Math.min(100, Math.max(0, percentage))}%`;
+      if (level !== null) {
+        currentLevelSpan.textContent = level;
+      }
+    }
+    
+    function updateStats() {
+      currentDepthSpan.textContent = maxDepth;
+      nodeCountSpan.textContent = graphData.nodes.length;
+      linkCountSpan.textContent = graphData.links.length;
+    }
+    
+    async function queueRequest(url) {
+      return new Promise((resolve) => {
+        requestQueue.push({ url, resolve });
+        processQueue();
+      });
+    }
+    
+    async function processQueue() {
+      if (isProcessingQueue || requestQueue.length === 0) return;
+      isProcessingQueue = true;
+      
+      while (requestQueue.length > 0) {
+        const { url, resolve } = requestQueue.shift();
+        try {
+          const response = await axios.get(url);
+          completedRequests++;
+          resolve({ data: response.data, error: null });
+        } catch (error) {
+          console.error('Request failed:', error);
+          completedRequests++;
+          resolve({ data: null, error: error.message });
+        }
+        
+        if (requestQueue.length > 0) {
+          await new Promise(r => setTimeout(r, REQUEST_DELAY));
+        }
+      }
+      
+      isProcessingQueue = false;
+    }
+    
+    async function fetchPaperDetails(paperId) {
+      totalRequests++;
+      const response = await queueRequest(`https://api.semanticscholar.org/graph/v1/paper/${paperId}?fields=title`);
+      return response.data || { title: "Unknown Paper" };
+    }
+    
+    // Restored original copyToClipboard function
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(
+        function() {
+          // Show confirmation (same as original)
+          const copyConfirmation = d3.select("body")
+            .append("div")
+            .attr("class", "copy-confirmation")
+            .style("position", "fixed")
+            .style("top", "20px")
+            .style("left", "50%")
+            .style("transform", "translateX(-50%)")
+            .style("background-color", "rgba(46, 204, 113, 0.9)")
+            .style("color", "white")
+            .style("padding", "10px 20px")
+            .style("border-radius", "4px")
+            .style("z-index", "1000")
+            .style("box-shadow", "0 2px 10px rgba(0,0,0,0.2)")
+            .style("opacity", "0")
+            .style("transition", "opacity 0.3s")
+            .text("Title copied to clipboard!");
+
+          copyConfirmation
+            .transition()
+            .style("opacity", "1")
+            .duration(300);
+
+          setTimeout(() => {
+            copyConfirmation
+              .transition()
+              .style("opacity", "0")
+              .duration(300)
+              .on("end", function() {
+                copyConfirmation.remove();
+              });
+          }, 2000);
+        },
+        function(err) {
+          console.error('Could not copy text: ', err);
+        }
+      );
+    }
+    
+    // Enhanced fetch references with strict depth control
+    async function fetchReferences(paperId, remainingDepth, currentLevel = 0) {
+      if (remainingDepth <= 0) {
+        console.log(`Stopping at paper ${paperId} - reached max depth (level ${currentLevel})`);
+        return null;
+      }
+      
+      const cacheKey = `${paperId}_${remainingDepth}`;
+      if (cache[cacheKey]) {
+        console.log(`Using cached data for ${paperId} at depth ${remainingDepth}`);
+        return cache[cacheKey];
+      }
+      
+      console.log(`Fetching references for ${paperId} at level ${currentLevel}, remaining depth: ${remainingDepth}`);
+      
+      const node = { 
+        id: paperId, 
+        title: "", 
+        children: [], 
+        level: currentLevel,
+        remainingDepth: remainingDepth
+      };
+      
+      try {
+        updateProgress(
+          `Processing level ${currentLevel + 1} of ${maxDepth} (${remainingDepth - 1} levels remaining)...`, 
+          (currentLevel / maxDepth) * 90, 
+          currentLevel + 1
+        );
+        
+        totalRequests++;
+        const response = await queueRequest(
+          `https://api.semanticscholar.org/graph/v1/paper/${paperId}/references?limit=${maxReferencesPerPaper}&fields=citedPaper.paperId,citedPaper.title`
+        );
+        
+        if (response.error) {
+          console.warn(`Error fetching references for ${paperId}:`, response.error);
+          cache[cacheKey] = node;
+          return node;
+        }
+
+        const apiData = response.data;
+        
+        if (!apiData || !apiData.data || apiData.data.length === 0) {
+          console.log(`No references found for ${paperId}`);
+          cache[cacheKey] = node;
+          return node;
+        }
+
+        console.log(`Found ${apiData.data.length} references for ${paperId}`);
+        
+        for (let i = 0; i < apiData.data.length && i < maxReferencesPerPaper; i++) {
+          const item = apiData.data[i];
+          const childPaperId = item.citedPaper.paperId;
+          const childTitle = item.citedPaper.title || `Paper ${childPaperId}`;
+          
+          const childNode = {
+            id: childPaperId,
+            title: childTitle,
+            children: [],
+            level: currentLevel + 1
+          };
+          
+          if (remainingDepth > 1) {
+            console.log(`Recursively fetching for ${childPaperId} with remaining depth ${remainingDepth - 1}`);
+            const deeperNode = await fetchReferences(childPaperId, remainingDepth - 1, currentLevel + 1);
+            if (deeperNode && deeperNode.children) {
+              childNode.children = deeperNode.children;
+            }
+          } else {
+            console.log(`Not going deeper for ${childPaperId} - depth limit reached`);
+          }
+          
+          node.children.push(childNode);
+        }
+        
+        console.log(`Added ${node.children.length} children to ${paperId}`);
+        cache[cacheKey] = node;
+        return node;
+        
+      } catch (error) {
+        console.error(`Error processing ${paperId}:`, error);
+        cache[cacheKey] = node;
+        return node;
+      }
+    }
+
+    function buildGraph(root) {
+      const nodes = [];
+      const links = [];
+      const processedIds = new Set();
+
+      function traverse(node, parentId = null) {
+        if (processedIds.has(node.id)) {
+          if (parentId !== null) {
+            links.push({ source: parentId, target: node.id });
+          }
+          return;
+        }
+        
+        if (!node.title && (!node.children || node.children.length === 0)) {
+          return;
+        }
+        
+        nodes.push({ 
+          id: node.id, 
+          title: node.title || `Paper ${node.id}`, 
+          level: node.level || 0 
+        });
+        
+        processedIds.add(node.id);
+        
+        if (parentId !== null) {
+          links.push({ source: parentId, target: node.id });
+        }
+        
+        if (node.children && node.children.length > 0) {
+          node.children.forEach(child => traverse(child, node.id));
+        }
+      }
+      
+      traverse(root);
+      console.log(`Built graph with ${nodes.length} nodes and ${links.length} links`);
+      return { nodes, links };
+    }
+
+    async function initGraph() {
+      const rootPaperId = search_id;
+      
+      completedRequests = 0;
+      totalRequests = 0;
+      Object.keys(cache).forEach(key => delete cache[key]);
+      
+      svg.selectAll("*").remove();
+      
+      if (currentSimulation) {
+        currentSimulation.stop();
+      }
+      
+      loadingScreen.style.display = "flex";
+      updateProgress("Fetching root paper details...", 5, 1);
+
+      const rootPaperDetails = await fetchPaperDetails(rootPaperId);
+      const root = {
+        id: rootPaperId,
+        title: rootPaperDetails.title || "Root Paper",
+        children: [],
+        level: 0
+      };
+
+      updateProgress("Building reference tree...", 15, 1);
+      console.log(`Starting reference tree build with max depth: ${maxDepth}`);
+      
+      const referenceTree = await fetchReferences(rootPaperId, maxDepth, 0);
+      if (referenceTree && referenceTree.children) {
+        root.children = referenceTree.children;
+      }
+
+      updateProgress("Constructing graph data...", 95);
+      graphData = buildGraph(root);
+      
+      console.log(`Final graph:`, {
+        nodes: graphData.nodes.length,
+        links: graphData.links.length,
+        maxDepth: maxDepth,
+        levels: [...new Set(graphData.nodes.map(n => n.level))].sort()
+      });
+
+      updateStats();
+      updateProgress("Rendering graph...", 98);
+      renderGraph(rootPaperId);
+      
+      updateProgress("Complete!", 100);
+      setTimeout(() => {
+        loadingScreen.style.display = "none";
+      }, 500);
+    }
+    
+    function renderGraph(rootPaperId) {
+      if (graphData.nodes.length === 0) {
+        console.warn("No nodes to render");
+        return;
+      }
+      
+      const simulation = d3.forceSimulation(graphData.nodes)
+        .force("link", d3.forceLink(graphData.links).id(d => d.id).distance(100))
+        .force("charge", d3.forceManyBody().strength(-200))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("collision", d3.forceCollide().radius(20));
+
+      currentSimulation = simulation;
+
+      const zoom = d3.zoom()
+        .scaleExtent([0.1, 4])
+        .on("zoom", (event) => {
+          container.attr("transform", event.transform);
+        });
+
+      svg.call(zoom);
+      
+      const container = svg.append("g");
+
+      const link = container.append("g")
+        .attr("class", "links")
+        .selectAll("line")
+        .data(graphData.links)
+        .enter().append("line")
+        .attr("class", "link");
+
+      const node = container.append("g")
+        .attr("class", "nodes")
+        .selectAll("circle")
+        .data(graphData.nodes)
+        .enter().append("circle")
+        .attr("class", d => {
+          let classes = "node";
+          if (d.id === rootPaperId) {
+            classes += " root-node";
+          } else {
+            classes += ` node-level-${Math.min(d.level, 5)}`;
+          }
+          return classes;
+        })
+        .attr("r", d => {
+          if (d.id === rootPaperId) return 15;
+          return Math.max(6, 12 - d.level * 1.5);
+        })
+        .style("cursor", "pointer")
+        .on("mouseover", function(event, d) {
+          const newRadius = d.id === rootPaperId ? 18 : Math.max(8, 15 - d.level * 1.5);
+          d3.select(this)
+            .transition()
+            .duration(200)
+            .attr("r", newRadius);
+            
+          tooltip.html(`<strong>${d.title}</strong><br>
+                       <span style="font-size: 12px; opacity: 0.8;">Level: ${d.level}</span><br>
+                       <span style="font-size: 12px; opacity: 0.8;">(Click to copy title)</span>`)
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 28) + "px")
+            .style("opacity", 1);
+            
+          const connectedNodes = new Set([d.id]);
+          graphData.links.forEach(l => {
+            if (l.source.id === d.id) connectedNodes.add(l.target.id);
+            if (l.target.id === d.id) connectedNodes.add(l.source.id);
+          });
+          
+          link.style("stroke-opacity", l => 
+            (l.source.id === d.id || l.target.id === d.id) ? 1 : 0.2
+          );
+          link.style("stroke-width", l => 
+            (l.source.id === d.id || l.target.id === d.id) ? 3 : 1
+          );
+          node.style("opacity", n => connectedNodes.has(n.id) ? 1 : 0.3);
+          text.style("opacity", t => connectedNodes.has(t.id) ? 1 : 0.2);
+        })
+        .on("mouseout", function(event, d) {
+          const originalRadius = d.id === rootPaperId ? 15 : Math.max(6, 12 - d.level * 1.5);
+          d3.select(this)
+            .transition()
+            .duration(200)
+            .attr("r", originalRadius);
+            
+          tooltip.style("opacity", 0);
+          
+          link.style("stroke-opacity", 0.6);
+          link.style("stroke-width", 1.5);
+          node.style("opacity", 1);
+          text.style("opacity", 1);
+        })
+        .on("click", function(event, d) {
+          if (d.title && d.title.trim() !== "") {
+            copyToClipboard(d.title);
+            
+            d3.select(this)
+              .transition()
+              .duration(100)
+              .attr("r", (d.id === rootPaperId ? 20 : Math.max(10, 16 - d.level * 1.5)))
+              .transition()
+              .duration(200)
+              .attr("r", (d.id === rootPaperId ? 15 : Math.max(6, 12 - d.level * 1.5)));
+          }
+        })
+        .call(drag(simulation));
+
+      const text = container.append("g")
+        .attr("class", "labels")
+        .selectAll("text")
+        .data(graphData.nodes)
+        .enter().append("text")
+        .attr("class", "label")
+        .attr("dx", 12)
+        .attr("dy", ".35em")
+        .style("cursor", "pointer")
+        .style("font-size", d => `${Math.max(10, 14 - d.level)}px`)
+        .text(d => {
+          const maxLength = Math.max(15, 35 - d.level * 5);
+          return d.title.length > maxLength ? d.title.substring(0, maxLength) + "..." : d.title;
+        })
+        .on("click", function(event, d) {
+          if (d.title && d.title.trim() !== "") {
+            copyToClipboard(d.title);
+            
+            d3.select(this)
+              .style("font-weight", "bold")
+              .transition()
+              .duration(500)
+              .style("font-weight", "normal");
+          }
+        });
+
+      simulation.on("tick", () => {
+        link.attr("x1", d => d.source.x)
+            .attr("y1", d => d.source.y)
+            .attr("x2", d => d.target.x)
+            .attr("y2", d => d.target.y);
+        node.attr("cx", d => d.x)
+            .attr("cy", d => d.y);
+        text.attr("x", d => d.x)
+            .attr("y", d => d.y);
+      });
+    }
+
+    function drag(simulation) {
+      function dragstarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+      }
+      function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+      }
+      function dragended(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+      }
+      return d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended);
+    }
+    
+    // Event listeners
+    depthInput.addEventListener('change', function() {
+      maxDepth = parseInt(this.value);
+      updateStats();
+    });
+    
+    maxRefsInput.addEventListener('change', function() {
+      maxReferencesPerPaper = parseInt(this.value);
+    });
+    
+    regenerateBtn.addEventListener('click', function() {
+      maxDepth = parseInt(depthInput.value);
+      maxReferencesPerPaper = parseInt(maxRefsInput.value);
+      initGraph();
+    });
+    
+    resetBtn.addEventListener('click', function() {
+      if (currentSimulation) {
+        svg.transition().duration(750).call(
+          d3.zoom().transform,
+          d3.zoomIdentity
+        );
+        currentSimulation.alpha(1).restart();
+      }
+    });
+    
+    // Restored original save history functionality
+    document.getElementById('saveHistoryBtn').addEventListener('click', async function() {
+      // Create a structured format that preserves all necessary information (same as original)
+      const dataToSave = {
+          nodes: graphData.nodes.map(node => ({
+              id: node.id,
+              title: node.title,
+              level: node.level
+          })),
+          links: graphData.links.map(link => ({
+              source: typeof link.source === 'object' ? link.source.id : link.source,
+              target: typeof link.target === 'object' ? link.target.id : link.target
+          })),
+          rootId: search_id,
+          // Added new metadata
+          metadata: {
+            maxDepth: maxDepth,
+            maxReferencesPerPaper: maxReferencesPerPaper,
+            timestamp: new Date().toISOString()
+          }
+      };
+      
+      try {
+          const response = await fetch('/save-history', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(dataToSave)
+          });
+          
+          if (response.ok) {
+              // Show success message (same as original)
+              const saveConfirmation = d3.select("body")
+                  .append("div")
+                  .attr("class", "save-confirmation")
+                  .style("position", "fixed")
+                  .style("top", "20px")
+                  .style("left", "50%")
+                  .style("transform", "translateX(-50%)")
+                  .style("background-color", "rgba(46, 204, 113, 0.9)")
+                  .style("color", "white")
+                  .style("padding", "10px 20px")
+                  .style("border-radius", "4px")
+                  .style("z-index", "1000")
+                  .style("box-shadow", "0 2px 10px rgba(0,0,0,0.2)")
+                  .style("opacity", "0")
+                  .style("transition", "opacity 0.3s")
+                  .text("Graph saved successfully!");
+
+              saveConfirmation
+                  .transition()
+                  .style("opacity", "1")
+                  .duration(300);
+
+              setTimeout(() => {
+                  saveConfirmation
+                      .transition()
+                      .style("opacity", "0")
+                      .duration(300)
+                      .on("end", function() {
+                          saveConfirmation.remove();
+                      });
+              }, 2000);
+          } else {
+              console.error('Failed to save graph data');
+          }
+      } catch (error) {
+          console.error('Error saving graph data:', error);
+      }
+    });
+
+    // Initialize with default settings
+    updateStats();
+    initGraph();
   </script>
 </body>
 </html>
