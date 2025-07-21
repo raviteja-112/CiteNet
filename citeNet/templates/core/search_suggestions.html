@@ -4,31 +4,30 @@
 {% block title %} ● Search {% endblock  %}
 
 {% block content %}
-
-
-
-<div class="mt-auto">
-    <form id="searchForm" class="max-w-md mx-auto" aria-labelledby="searchFormLabel">
-        <label for="searchInput" class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
-        <div class="relative">
-            <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
-                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
-                </svg>
+<div class="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)]">
+    <div class="w-full max-w-2xl px-4">
+        <h1 class="mb-4 text-4xl font-extrabold leading-none tracking-tight text-center text-gray-900 md:text-5xl lg:text-6xl dark:text-white">CiteNet</h1>
+        <p class="mb-6 text-lg font-normal text-center text-gray-500 lg:text-xl sm:px-16 xl:px-48 dark:text-gray-400">Search for academic papers and visualize their citation network.</p>
+        <form id="searchForm" class="max-w-md mx-auto" aria-labelledby="searchFormLabel">
+            <label for="searchInput" class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+                    </svg>
+                </div>
+                <input type="search" id="searchInput" class="block w-full p-4 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="Type to search..." required />
+                <button type="submit" id="submit" class="text-white absolute right-2.5 bottom-2.5 bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">Search</button>
             </div>
-            <input type="search" id="searchInput" class="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Type to search..." required />
-            <button type="submit" id="submit" class="text-white absolute end-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Search</button>
+        </form>
+        <div id="suggestions" class="mt-4 max-w-md mx-auto bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700">
+            <ul id="suggestionsList" class="divide-y divide-gray-200 dark:divide-gray-700"></ul>
         </div>
-    </form>
-    <div id="suggestions" class="mt-4 max-w-md mx-auto bg-black border border-gray-600 rounded-lg shadow-md">
-        <ul id="suggestionsList" class="divide-y divide-gray-700"></ul>
     </div>
+</div>
 
-
-    {% block extraJs %}
-    <script src= {% static "js/search_suggestion.js" %}></script>
-    {% endblock  %}
-    
-
+{% block extraJs %}
+<script src= {% static "js/search_suggestion.js" %}></script>
+{% endblock  %}
 
 {% endblock  %}
