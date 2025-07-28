@@ -26,7 +26,7 @@
     
     <button class="fixed px-4 py-2 text-white rounded-lg top-4 right-4 bg-primary-600 hover:bg-primary-700" id="saveHistoryBtn">Save History</button>
     
-    <div hidden id="search-id">{{search_id}}</div>
+    <div hidden id="search-id">{{search_id|safe}}</div>
 
     <div class="flex flex-wrap items-center gap-4 my-6">
       <div class="flex items-center gap-2">
@@ -54,6 +54,14 @@
 
     <div id="tooltip" class="absolute z-10 px-3 py-2 text-sm font-light text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700"></div>
     <svg id="reference-graph-svg" class="w-full h-auto bg-white rounded-lg shadow-md dark:bg-gray-800"></svg>
+  </div>
+
+  <div id="no-references-modal" class="fixed top-0 left-0 z-50 flex flex-col items-center justify-center w-full h-full bg-gray-900 bg-opacity-50 backdrop-blur-sm" style="display: none;">
+    <div class="p-6 bg-white rounded-lg shadow-lg dark:bg-gray-800">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">No References Found</h2>
+        <p class="mt-2 text-gray-700 dark:text-gray-300">Sorry, we couldn't find any references for this paper.</p>
+        <button id="close-modal-btn" class="px-4 py-2 mt-4 text-white rounded-lg bg-primary-600 hover:bg-primary-700">Close</button>
+    </div>
   </div>
 
   <div id="loading-screen" class="fixed top-0 left-0 z-50 flex flex-col items-center justify-center w-full h-full bg-gray-900 bg-opacity-50 backdrop-blur-sm">
@@ -92,8 +100,11 @@
     const currentDepthSpan = document.getElementById("currentDepth");
     const nodeCountSpan = document.getElementById("nodeCount");
     const linkCountSpan = document.getElementById("linkCount");
+    const noReferencesModal = document.getElementById("no-references-modal");
+    const closeModalBtn = document.getElementById("close-modal-btn");
     
-    const search_id = searchIdElement.textContent.replace(/"/g, '').replace(/{{search_id}}/g, '649def34f8be52c8b66281af98ae884c09aef38b');
+    const search_id = searchIdElement.textContent.replace(/"/g, '').trim();
+
     
     // Set SVG dimensions
     const width = 1200;
@@ -232,7 +243,7 @@
         
         totalRequests++;
         const response = await queueRequest(
-          `https://api.semanticscholar.org/graph/v1/paper/${paperId}/references?limit=${maxReferencesPerPaper}&fields=citedPaper.paperId,citedPaper.title`
+          `https://api.semanticscholar.org/graph/v1/paper/${paperId}/references?limit=${maxReferencesPerPaper}&fields=title`
         );
         
         if (response.error) {
@@ -242,7 +253,17 @@
         }
 
         const apiData = response.data;
+
+        if (currentLevel === 0 && (!apiData || !apiData.data)) {
+            noReferencesModal.style.display = 'flex';
+            loadingScreen.style.display = 'none';
+            return null;
+        }
         
+        if (apiData && apiData.citingPaperInfo) {
+            node.title = apiData.citingPaperInfo.title || `Paper ${paperId}`;
+        }
+
         if (!apiData || !apiData.data || apiData.data.length === 0) {
           console.log(`No references found for ${paperId}`);
           cache[cacheKey] = node;
@@ -569,6 +590,10 @@
         );
         currentSimulation.alpha(1).restart();
       }
+    });
+    
+    closeModalBtn.addEventListener('click', () => {
+      noReferencesModal.style.display = 'none';
     });
     
     // Restored original save history functionality
