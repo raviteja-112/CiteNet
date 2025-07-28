@@ -1,37 +1,35 @@
-<!DOCTYPE html>
-<html lang="en" class="dark">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reference Graph</title>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            primary: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"}
-          }
-        }
-      }
+{% extends "layout.html" %}
+
+{% block title %}Reference Graph{% endblock %}
+
+{% block extraCss %}
+<style>
+    /* Additional styles for D3 graph if needed, but prefer Tailwind classes */
+    .link {
+        stroke: #9ca3af; /* gray-400 */
+        stroke-opacity: 0.6;
     }
-    </script>
-</head>
-<body class="bg-gray-100 dark:bg-gray-900">
-  <div class="container p-6 mx-auto">
-    <a href="{% url 'search' %}" class="text-2xl font-bold text-gray-900 dark:text-white hover:text-primary-500">Go back to Home</a>
-    
-    <button class="fixed px-4 py-2 text-white rounded-lg top-4 right-4 bg-primary-600 hover:bg-primary-700" id="saveHistoryBtn">Save History</button>
+    .dark .link {
+        stroke: #4b5563; /* gray-600 */
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="p-6">
+    <div class="flex items-center justify-between mb-6">
+        <a href="{% url 'search' %}" class="text-lg font-bold text-gray-900 dark:text-white hover:text-primary-500">
+            &larr; Go back to Home
+        </a>
+        <button class="px-4 py-2 text-white rounded-lg bg-primary-600 hover:bg-primary-700" id="saveHistoryBtn">Save History</button>
+    </div>
     
     <div hidden id="search-id">{{search_id|safe}}</div>
 
-    <div class="flex flex-wrap items-center gap-4 my-6">
+    <div class="flex flex-wrap items-center gap-4 my-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg shadow">
       <div class="flex items-center gap-2">
         <label for="depthInput" class="text-sm font-medium text-gray-700 dark:text-gray-300">Max Depth:</label>
-        <select id="depthInput" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+        <select id="depthInput" class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
           <option value="1">1 Level</option>
           <option value="2" selected>2 Levels</option>
           <option value="3">3 Levels</option>
@@ -41,22 +39,21 @@
       </div>
       <div class="flex items-center gap-2">
         <label for="maxRefsInput" class="text-sm font-medium text-gray-700 dark:text-gray-300">Max Refs per Paper:</label>
-        <input type="number" id="maxRefsInput" value="3" min="2" max="15" step="1" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500">
+        <input type="number" id="maxRefsInput" value="3" min="2" max="15" step="1" class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5">
       </div>
       <button id="regenerateBtn" class="px-4 py-2 text-white rounded-lg bg-primary-600 hover:bg-primary-700">Regenerate Graph</button>
       <button id="resetBtn" class="px-4 py-2 text-white bg-gray-600 rounded-lg hover:bg-gray-700">Reset View</button>
     </div>
 
-    <div class="p-4 my-4 text-sm text-gray-700 bg-gray-100 rounded-lg dark:bg-gray-800 dark:text-gray-300" id="statsContainer">
+    <div class="p-4 my-4 text-sm text-gray-700 bg-gray-100 rounded-lg dark:bg-gray-700 dark:text-gray-300" id="statsContainer">
       <div>Graph will be generated up to <span id="currentDepth" class="font-bold">2</span> levels deep</div>
       <div>Current stats: <span id="nodeCount" class="font-bold">0</span> nodes, <span id="linkCount" class="font-bold">0</span> links</div>
     </div>
 
     <div id="tooltip" class="absolute z-10 px-3 py-2 text-sm font-light text-white transition-opacity duration-300 bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700"></div>
     <svg id="reference-graph-svg" class="w-full h-auto bg-white rounded-lg shadow-md dark:bg-gray-800"></svg>
-  </div>
 
-  <div id="no-references-modal" class="fixed top-0 left-0 z-50 flex flex-col items-center justify-center w-full h-full bg-gray-900 bg-opacity-50 backdrop-blur-sm" style="display: none;">
+  <div id="no-references-modal" class="fixed top-0 left-0 z-50 flex-col items-center justify-center w-full h-full bg-gray-900 bg-opacity-50 backdrop-blur-sm hidden">
     <div class="p-6 bg-white rounded-lg shadow-lg dark:bg-gray-800">
         <h2 class="text-xl font-semibold text-gray-900 dark:text-white">No References Found</h2>
         <p class="mt-2 text-gray-700 dark:text-gray-300">Sorry, we couldn't find any references for this paper.</p>
@@ -73,8 +70,13 @@
     </div>
     <div id="progress-text" class="mt-2 text-sm text-white">Initializing...</div>
   </div>
-  
-   <script>
+</main>
+{% endblock %}
+
+{% block extraJs %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
     // Global variables with defaults
     const cache = {};
     let graphData = { nodes: [], links: [] };
@@ -168,83 +170,39 @@
       return response.data || { title: "Unknown Paper" };
     }
     
-    // Restored original copyToClipboard function
     function copyToClipboard(text) {
-      navigator.clipboard.writeText(text).then(
-        function() {
-          // Show confirmation (same as original)
-          const copyConfirmation = d3.select("body")
-            .append("div")
-            .attr("class", "copy-confirmation")
-            .style("position", "fixed")
-            .style("top", "20px")
-            .style("left", "50%")
-            .style("transform", "translateX(-50%)")
-            .style("background-color", "rgba(46, 204, 113, 0.9)")
-            .style("color", "white")
-            .style("padding", "10px 20px")
-            .style("border-radius", "4px")
-            .style("z-index", "1000")
-            .style("box-shadow", "0 2px 10px rgba(0,0,0,0.2)")
-            .style("opacity", "0")
-            .style("transition", "opacity 0.3s")
-            .text("Title copied to clipboard!");
+        navigator.clipboard.writeText(text).then(function() {
+            const copyConfirmation = d3.select("body")
+                .append("div")
+                .attr("class", "fixed top-5 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg opacity-0")
+                .text("Title copied to clipboard!");
 
-          copyConfirmation
-            .transition()
-            .style("opacity", "1")
-            .duration(300);
-
-          setTimeout(() => {
-            copyConfirmation
-              .transition()
-              .style("opacity", "0")
-              .duration(300)
-              .on("end", function() {
-                copyConfirmation.remove();
-              });
-          }, 2000);
-        },
-        function(err) {
-          console.error('Could not copy text: ', err);
-        }
-      );
+            copyConfirmation.transition()
+                .style("opacity", "1")
+                .duration(300)
+                .transition()
+                .delay(2000)
+                .style("opacity", "0")
+                .duration(300)
+                .remove();
+        }, function(err) {
+            console.error('Could not copy text: ', err);
+        });
     }
     
-    // Enhanced fetch references with strict depth control
     async function fetchReferences(paperId, remainingDepth, currentLevel = 0) {
-      if (remainingDepth <= 0) {
-        console.log(`Stopping at paper ${paperId} - reached max depth (level ${currentLevel})`);
-        return null;
-      }
+      if (remainingDepth <= 0) return null;
       
       const cacheKey = `${paperId}_${remainingDepth}`;
-      if (cache[cacheKey]) {
-        console.log(`Using cached data for ${paperId} at depth ${remainingDepth}`);
-        return cache[cacheKey];
-      }
+      if (cache[cacheKey]) return cache[cacheKey];
       
-      console.log(`Fetching references for ${paperId} at level ${currentLevel}, remaining depth: ${remainingDepth}`);
-      
-      const node = { 
-        id: paperId, 
-        title: "", 
-        children: [], 
-        level: currentLevel,
-        remainingDepth: remainingDepth
-      };
+      const node = { id: paperId, title: "", children: [], level: currentLevel };
       
       try {
-        updateProgress(
-          `Processing level ${currentLevel + 1} of ${maxDepth} (${remainingDepth - 1} levels remaining)...`, 
-          (currentLevel / maxDepth) * 90, 
-          currentLevel + 1
-        );
+        updateProgress(`Processing level ${currentLevel + 1} of ${maxDepth}...`, (currentLevel / maxDepth) * 90, currentLevel + 1);
         
         totalRequests++;
-        const response = await queueRequest(
-          `https://api.semanticscholar.org/graph/v1/paper/${paperId}/references?limit=${maxReferencesPerPaper}&fields=title`
-        );
+        const response = await queueRequest(`https://api.semanticscholar.org/graph/v1/paper/${paperId}/references?limit=${maxReferencesPerPaper}&fields=title`);
         
         if (response.error) {
           console.warn(`Error fetching references for ${paperId}:`, response.error);
@@ -254,7 +212,7 @@
 
         const apiData = response.data;
 
-        if (currentLevel === 0 && (!apiData || !apiData.data)) {
+        if (currentLevel === 0 && (!apiData || !apiData.data || apiData.data.length === 0)) {
             noReferencesModal.style.display = 'flex';
             loadingScreen.style.display = 'none';
             return null;
@@ -265,39 +223,19 @@
         }
 
         if (!apiData || !apiData.data || apiData.data.length === 0) {
-          console.log(`No references found for ${paperId}`);
           cache[cacheKey] = node;
           return node;
         }
-
-        console.log(`Found ${apiData.data.length} references for ${paperId}`);
         
-        for (let i = 0; i < apiData.data.length && i < maxReferencesPerPaper; i++) {
+        for (let i = 0; i < apiData.data.length; i++) {
           const item = apiData.data[i];
           const childPaperId = item.citedPaper.paperId;
-          const childTitle = item.citedPaper.title || `Paper ${childPaperId}`;
-          
-          const childNode = {
-            id: childPaperId,
-            title: childTitle,
-            children: [],
-            level: currentLevel + 1
-          };
-          
-          if (remainingDepth > 1) {
-            console.log(`Recursively fetching for ${childPaperId} with remaining depth ${remainingDepth - 1}`);
-            const deeperNode = await fetchReferences(childPaperId, remainingDepth - 1, currentLevel + 1);
-            if (deeperNode && deeperNode.children) {
-              childNode.children = deeperNode.children;
-            }
-          } else {
-            console.log(`Not going deeper for ${childPaperId} - depth limit reached`);
+          const childNode = await fetchReferences(childPaperId, remainingDepth - 1, currentLevel + 1);
+          if(childNode) {
+            node.children.push(childNode);
           }
-          
-          node.children.push(childNode);
         }
         
-        console.log(`Added ${node.children.length} children to ${paperId}`);
         cache[cacheKey] = node;
         return node;
         
@@ -314,36 +252,20 @@
       const processedIds = new Set();
 
       function traverse(node, parentId = null) {
-        if (processedIds.has(node.id)) {
-          if (parentId !== null) {
-            links.push({ source: parentId, target: node.id });
-          }
+        if (!node || processedIds.has(node.id)) {
+          if (parentId && node) links.push({ source: parentId, target: node.id });
           return;
         }
         
-        if (!node.title && (!node.children || node.children.length === 0)) {
-          return;
-        }
-        
-        nodes.push({ 
-          id: node.id, 
-          title: node.title || `Paper ${node.id}`, 
-          level: node.level || 0 
-        });
-        
+        nodes.push({ id: node.id, title: node.title || `Paper ${node.id}`, level: node.level || 0 });
         processedIds.add(node.id);
         
-        if (parentId !== null) {
-          links.push({ source: parentId, target: node.id });
-        }
+        if (parentId) links.push({ source: parentId, target: node.id });
         
-        if (node.children && node.children.length > 0) {
-          node.children.forEach(child => traverse(child, node.id));
-        }
+        if (node.children) node.children.forEach(child => traverse(child, node.id));
       }
       
       traverse(root);
-      console.log(`Built graph with ${nodes.length} nodes and ${links.length} links`);
       return { nodes, links };
     }
 
@@ -355,55 +277,29 @@
       Object.keys(cache).forEach(key => delete cache[key]);
       
       svg.selectAll("*").remove();
-      
-      if (currentSimulation) {
-        currentSimulation.stop();
-      }
+      if (currentSimulation) currentSimulation.stop();
       
       loadingScreen.style.display = "flex";
       updateProgress("Fetching root paper details...", 5, 1);
 
       const rootPaperDetails = await fetchPaperDetails(rootPaperId);
-      const root = {
-        id: rootPaperId,
-        title: rootPaperDetails.title || "Root Paper",
-        children: [],
-        level: 0
-      };
+      const root = await fetchReferences(rootPaperId, maxDepth, 0);
+      root.title = rootPaperDetails.title || "Root Paper";
 
-      updateProgress("Building reference tree...", 15, 1);
-      console.log(`Starting reference tree build with max depth: ${maxDepth}`);
-      
-      const referenceTree = await fetchReferences(rootPaperId, maxDepth, 0);
-      if (referenceTree && referenceTree.children) {
-        root.children = referenceTree.children;
-      }
 
       updateProgress("Constructing graph data...", 95);
       graphData = buildGraph(root);
       
-      console.log(`Final graph:`, {
-        nodes: graphData.nodes.length,
-        links: graphData.links.length,
-        maxDepth: maxDepth,
-        levels: [...new Set(graphData.nodes.map(n => n.level))].sort()
-      });
-
       updateStats();
       updateProgress("Rendering graph...", 98);
       renderGraph(rootPaperId);
       
       updateProgress("Complete!", 100);
-      setTimeout(() => {
-        loadingScreen.style.display = "none";
-      }, 500);
+      setTimeout(() => { loadingScreen.style.display = "none"; }, 500);
     }
     
     function renderGraph(rootPaperId) {
-      if (graphData.nodes.length === 0) {
-        console.warn("No nodes to render");
-        return;
-      }
+      if (graphData.nodes.length === 0) return;
       
       const simulation = d3.forceSimulation(graphData.nodes)
         .force("link", d3.forceLink(graphData.links).id(d => d.id).distance(100))
@@ -413,135 +309,57 @@
 
       currentSimulation = simulation;
 
-      const zoom = d3.zoom()
-        .scaleExtent([0.1, 4])
-        .on("zoom", (event) => {
-          container.attr("transform", event.transform);
-        });
-
+      const zoom = d3.zoom().scaleExtent([0.1, 4]).on("zoom", (event) => container.attr("transform", event.transform));
       svg.call(zoom);
       
       const container = svg.append("g");
 
       const link = container.append("g")
-        .attr("class", "links")
         .selectAll("line")
         .data(graphData.links)
-        .enter().append("line")
+        .join("line")
         .attr("class", "link");
 
       const node = container.append("g")
-        .attr("class", "nodes")
         .selectAll("circle")
         .data(graphData.nodes)
-        .enter().append("circle")
+        .join("circle")
+        .attr("r", d => (d.id === rootPaperId) ? 15 : Math.max(6, 12 - d.level * 1.5))
         .attr("class", d => {
-          let classes = "node";
-          if (d.id === rootPaperId) {
-            classes += " root-node";
-          } else {
-            classes += ` node-level-${Math.min(d.level, 5)}`;
-          }
-          return classes;
+            const baseClasses = "node stroke-2 stroke-white dark:stroke-gray-900 cursor-pointer";
+            if (d.id === rootPaperId) return `${baseClasses} fill-red-500`;
+            const colors = ["fill-blue-500", "fill-green-500", "fill-yellow-500", "fill-purple-500", "fill-teal-500"];
+            return `${baseClasses} ${colors[d.level % colors.length]}`;
         })
-        .attr("r", d => {
-          if (d.id === rootPaperId) return 15;
-          return Math.max(6, 12 - d.level * 1.5);
-        })
-        .style("cursor", "pointer")
         .on("mouseover", function(event, d) {
-          const newRadius = d.id === rootPaperId ? 18 : Math.max(8, 15 - d.level * 1.5);
-          d3.select(this)
-            .transition()
-            .duration(200)
-            .attr("r", newRadius);
-            
-          tooltip.html(`<strong>${d.title}</strong><br>
-                       <span style="font-size: 12px; opacity: 0.8;">Level: ${d.level}</span><br>
-                       <span style="font-size: 12px; opacity: 0.8;">(Click to copy title)</span>`)
+          d3.select(this).transition().duration(200).attr("r", d.id === rootPaperId ? 18 : Math.max(8, 15 - d.level * 1.5));
+          tooltip.html(`<strong>${d.title}</strong><br><span class="text-xs opacity-80">(Click to copy title)</span>`)
             .style("left", (event.pageX + 10) + "px")
             .style("top", (event.pageY - 28) + "px")
             .style("opacity", 1);
-            
-          const connectedNodes = new Set([d.id]);
-          graphData.links.forEach(l => {
-            if (l.source.id === d.id) connectedNodes.add(l.target.id);
-            if (l.target.id === d.id) connectedNodes.add(l.source.id);
-          });
-          
-          link.style("stroke-opacity", l => 
-            (l.source.id === d.id || l.target.id === d.id) ? 1 : 0.2
-          );
-          link.style("stroke-width", l => 
-            (l.source.id === d.id || l.target.id === d.id) ? 3 : 1
-          );
-          node.style("opacity", n => connectedNodes.has(n.id) ? 1 : 0.3);
-          text.style("opacity", t => connectedNodes.has(t.id) ? 1 : 0.2);
         })
         .on("mouseout", function(event, d) {
-          const originalRadius = d.id === rootPaperId ? 15 : Math.max(6, 12 - d.level * 1.5);
-          d3.select(this)
-            .transition()
-            .duration(200)
-            .attr("r", originalRadius);
-            
+          d3.select(this).transition().duration(200).attr("r", d.id === rootPaperId ? 15 : Math.max(6, 12 - d.level * 1.5));
           tooltip.style("opacity", 0);
-          
-          link.style("stroke-opacity", 0.6);
-          link.style("stroke-width", 1.5);
-          node.style("opacity", 1);
-          text.style("opacity", 1);
         })
         .on("click", function(event, d) {
-          if (d.title && d.title.trim() !== "") {
-            copyToClipboard(d.title);
-            
-            d3.select(this)
-              .transition()
-              .duration(100)
-              .attr("r", (d.id === rootPaperId ? 20 : Math.max(10, 16 - d.level * 1.5)))
-              .transition()
-              .duration(200)
-              .attr("r", (d.id === rootPaperId ? 15 : Math.max(6, 12 - d.level * 1.5)));
-          }
+          if (d.title && d.title.trim() !== "") copyToClipboard(d.title);
         })
         .call(drag(simulation));
 
       const text = container.append("g")
-        .attr("class", "labels")
         .selectAll("text")
         .data(graphData.nodes)
-        .enter().append("text")
-        .attr("class", "label")
+        .join("text")
+        .attr("class", "label text-xs fill-gray-600 dark:fill-gray-300 pointer-events-none select-none")
         .attr("dx", 12)
         .attr("dy", ".35em")
-        .style("cursor", "pointer")
-        .style("font-size", d => `${Math.max(10, 14 - d.level)}px`)
-        .text(d => {
-          const maxLength = Math.max(15, 35 - d.level * 5);
-          return d.title.length > maxLength ? d.title.substring(0, maxLength) + "..." : d.title;
-        })
-        .on("click", function(event, d) {
-          if (d.title && d.title.trim() !== "") {
-            copyToClipboard(d.title);
-            
-            d3.select(this)
-              .style("font-weight", "bold")
-              .transition()
-              .duration(500)
-              .style("font-weight", "normal");
-          }
-        });
+        .text(d => d.title.length > 25 ? d.title.substring(0, 25) + "..." : d.title);
 
       simulation.on("tick", () => {
-        link.attr("x1", d => d.source.x)
-            .attr("y1", d => d.source.y)
-            .attr("x2", d => d.target.x)
-            .attr("y2", d => d.target.y);
-        node.attr("cx", d => d.x)
-            .attr("cy", d => d.y);
-        text.attr("x", d => d.x)
-            .attr("y", d => d.y);
+        link.attr("x1", d => d.source.x).attr("y1", d => d.source.y).attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+        node.attr("cx", d => d.x).attr("cy", d => d.y);
+        text.attr("x", d => d.x).attr("y", d => d.y);
       });
     }
 
@@ -560,106 +378,41 @@
         d.fx = null;
         d.fy = null;
       }
-      return d3.drag()
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", dragended);
+      return d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended);
     }
     
     // Event listeners
-    depthInput.addEventListener('change', function() {
-      maxDepth = parseInt(this.value);
-      updateStats();
-    });
-    
-    maxRefsInput.addEventListener('change', function() {
-      maxReferencesPerPaper = parseInt(this.value);
-    });
-    
-    regenerateBtn.addEventListener('click', function() {
-      maxDepth = parseInt(depthInput.value);
-      maxReferencesPerPaper = parseInt(maxRefsInput.value);
-      initGraph();
-    });
-    
-    resetBtn.addEventListener('click', function() {
+    depthInput.addEventListener('change', () => { maxDepth = parseInt(depthInput.value); updateStats(); });
+    maxRefsInput.addEventListener('change', () => { maxReferencesPerPaper = parseInt(maxRefsInput.value); });
+    regenerateBtn.addEventListener('click', initGraph);
+    resetBtn.addEventListener('click', () => {
       if (currentSimulation) {
-        svg.transition().duration(750).call(
-          d3.zoom().transform,
-          d3.zoomIdentity
-        );
+        svg.transition().duration(750).call(d3.zoom().transform, d3.zoomIdentity);
         currentSimulation.alpha(1).restart();
       }
     });
+    closeModalBtn.addEventListener('click', () => { noReferencesModal.style.display = 'none'; });
     
-    closeModalBtn.addEventListener('click', () => {
-      noReferencesModal.style.display = 'none';
-    });
-    
-    // Restored original save history functionality
     document.getElementById('saveHistoryBtn').addEventListener('click', async function() {
-      // Create a structured format that preserves all necessary information (same as original)
       const dataToSave = {
-          nodes: graphData.nodes.map(node => ({
-              id: node.id,
-              title: node.title,
-              level: node.level
-          })),
-          links: graphData.links.map(link => ({
-              source: typeof link.source === 'object' ? link.source.id : link.source,
-              target: typeof link.target === 'object' ? link.target.id : link.target
-          })),
+          nodes: graphData.nodes.map(n => ({ id: n.id, title: n.title, level: n.level })),
+          links: graphData.links.map(l => ({ source: l.source.id, target: l.target.id })),
           rootId: search_id,
-          // Added new metadata
-          metadata: {
-            maxDepth: maxDepth,
-            maxReferencesPerPaper: maxReferencesPerPaper,
-            timestamp: new Date().toISOString()
-          }
+          metadata: { maxDepth, maxReferencesPerPaper, timestamp: new Date().toISOString() }
       };
       
       try {
           const response = await fetch('/save-history', {
               method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-              },
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(dataToSave)
           });
           
           if (response.ok) {
-              // Show success message (same as original)
-              const saveConfirmation = d3.select("body")
-                  .append("div")
-                  .attr("class", "save-confirmation")
-                  .style("position", "fixed")
-                  .style("top", "20px")
-                  .style("left", "50%")
-                  .style("transform", "translateX(-50%)")
-                  .style("background-color", "rgba(46, 204, 113, 0.9)")
-                  .style("color", "white")
-                  .style("padding", "10px 20px")
-                  .style("border-radius", "4px")
-                  .style("z-index", "1000")
-                  .style("box-shadow", "0 2px 10px rgba(0,0,0,0.2)")
-                  .style("opacity", "0")
-                  .style("transition", "opacity 0.3s")
+              const saveConfirmation = d3.select("body").append("div")
+                  .attr("class", "fixed top-5 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg")
                   .text("Graph saved successfully!");
-
-              saveConfirmation
-                  .transition()
-                  .style("opacity", "1")
-                  .duration(300);
-
-              setTimeout(() => {
-                  saveConfirmation
-                      .transition()
-                      .style("opacity", "0")
-                      .duration(300)
-                      .on("end", function() {
-                          saveConfirmation.remove();
-                      });
-              }, 2000);
+              saveConfirmation.transition().delay(2000).duration(300).style("opacity", 0).remove();
           } else {
               console.error('Failed to save graph data');
           }
@@ -668,9 +421,9 @@
       }
     });
 
-    // Initialize with default settings
+    // Initialize
     updateStats();
     initGraph();
-  </script>
-</body>
-</html>
+</script>
+{% endblock %}
+

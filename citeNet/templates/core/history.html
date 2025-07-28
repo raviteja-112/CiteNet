@@ -3,7 +3,7 @@
 {% block title %}History Log{% endblock %}
 
 {% block content %}
-<div class="container p-6 mx-auto">
+<main class="container p-6 mx-auto">
   <h1 class="mb-8 text-3xl font-bold text-center text-gray-900 dark:text-white">History Log</h1>
   
   {% if history_data %}
@@ -31,7 +31,7 @@
               {% csrf_token %}
               <button type="submit" 
                       class="font-medium text-red-600 dark:text-red-500 hover:underline"
-                      onclick="return confirm('Are you sure you want to delete this entry?')">
+                      onclick="return confirm('Are you sure you want to delete this history entry? This action cannot be undone.')">
                 Delete
               </button>
             </form>
@@ -42,9 +42,13 @@
     </table>
   </div>
   {% else %}
-  <div class="p-8 text-center text-gray-600 bg-yellow-50 border border-yellow-300 rounded-lg dark:bg-gray-800 dark:border-yellow-600 dark:text-gray-400">
-    <p class="text-lg">No history entries found.</p>
+  <div class="p-8 mt-6 text-center text-gray-500 border-2 border-dashed rounded-lg border-gray-300 dark:border-gray-700 dark:text-gray-400">
+    <h3 class="text-xl font-semibold">No History Found</h3>
+    <p class="mt-2">You haven't saved any citation graphs yet. Start a new search to build and save your first graph.</p>
+    <a href="{% url 'search' %}" class="inline-block px-5 py-2.5 mt-4 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 dark:focus:ring-primary-800">
+        Start Searching
+    </a>
   </div>
   {% endif %}
-</div>
+</main>
 {% endblock %}
