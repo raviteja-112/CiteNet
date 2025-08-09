@@ -81,7 +81,7 @@ raviteja-112-citenet/
 
 1. **Clone the Repository**  
    ```bash
-   git clone https://github.com/[your-username]/raviteja-112-citenet.git
+   git clone https://github.com/raviteja-112/CiteNet.git
    cd raviteja-112-citenet/citeNet
    ```
 
@@ -165,5 +165,8 @@ Contributions are welcome! To contribute:
 4. Push to the branch (`git push origin feature-name`).
 5. Open a pull request.
 
+## Contributors & Maintainers
 
+We welcome contributions from the community! If you are interested in becoming a maintainer or have questions about contributing, please reach out.
 
+If you are not able to host it, we have a website: https://citenet-k8ne.onrender.com/
